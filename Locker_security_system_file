@@ -1,0 +1,76 @@
+import conf                     #Importing the sms configuration file
+import json,time,math,statistics #Importing required python libraries
+from boltiot import Bolt,Sms    #Importing from Bolt python libraries
+
+# A function to calculate the Z-score
+def calc_limit(data_history,framesize,factor):
+  if(len(data_history) < framesize):
+    return None
+  if(len(data_history) > framesize):
+    del data_history[0:len(data_history)-framesize]
+  X = statistics.mean(data_history)
+  Variance = 0
+  for data in data_history:
+    Variance = Variance + math.pow((data - X),2)
+  Z = factor * math.sqrt(Variance/framesize)
+  # Calculating the threshold value
+  alert_value = data_history[framesize-1] + Z
+  return alert_value
+  
+# Creating an object to access the Bolt WiFi module
+device = Bolt(conf.API_KEY,conf.DEVICE_ID)
+# Creating an Sms object to send SMS
+sms = Sms(conf.SID,conf.AUTH_TOKEN,conf.TO_NUMBER,conf.FROM_NUMBER)
+
+data_history = []  # A list to store the sensor data values
+
+while(True):
+  # Reading the sensor value from the cloud
+  response = device.analogRead('A0') 
+  # Converting the data into JSON format
+  data = json.loads(response)
+  try:
+    sensor_value = int(data['value'])
+    # Printing the sensor value
+    print("The current sensor value is: ",sensor_value)
+  except Exception as e:
+    print("There was an error while retrieving the data!")
+    # Printing the error
+    print("Error: ",e)
+    time.sleep(10)
+    continue
+  
+  # Calling the function to calculate the Z-score
+  limit = calc_limit(data_history,conf.FRAME_SIZE,conf.MUL_FACTOR)
+  
+  if(not limit):
+    req_count = conf.FRAME_SIZE - len(data_history)
+    print("Not enough data to compute Z-score.")
+    print("Need ",req_count," more data points.")
+    data_history.append(int(data['value']))
+    time.sleep(10)
+    continue
+  
+  try:
+    # If an anomaly in the readings is detected
+    if(int(data['value']) > limit):
+      print("Sensor value has increased suddenly!")
+      print("Sending an alert message...")
+      device.digitalWrite(1,'HIGH')
+      device.digitalWrite(2,'LOW')
+      # Sending an alert message
+      sms_response = sms.send_sms("ALERT! Someone has opened your locker!")
+      print("This is the message report:",sms_response)
+    data_history.append(int(data['value']))
+  except Exception as e:
+    print("An error occurred!")
+    print("Error: ",e)
+    
+  device.digitalWrite(1,'LOW')
+  device.digitalWrite(2,'LOW')
+  # Taking a break of 10 seconds for the next API request
+  time.sleep(10)
+
+# Press Ctrl+C to stop the program
+      
+    
