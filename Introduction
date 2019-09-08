@@ -1,0 +1,7 @@
+Hello everyone, this is a basic project to send security alert messages to your phone number whenever someone opens your home's locker.
+The Bolt IoT WiFi Module is the heart of this project. Basically, this project is based upon the basics of Machine Learning algorithm, 
+known as the Z-score Analysis. It is like whenever an anomaly is detected in the readings recorded by the Light Dependent Resistor (LDR)
+sensor, a quick SMS request is done and an SMS is received on your phone number. A LDR is basically a sensor which records the light 
+intensity value. It sends the value to the Bolt Cloud, and the required output is shown depending upon the program running behind. 
+In this project I have also connected a buzzer to the Bolt WiFi Module to give it a more realistic approach. As soon as an anomaly in 
+the data is detected, an SMS alert would be sent as well as the buzzer would start ringing for a few seconds.
